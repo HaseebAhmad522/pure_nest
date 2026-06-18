@@ -107,9 +107,11 @@ class LoginSerializer(serializers.Serializer):
 
         if not user.is_active:
             raise serializers.ValidationError("This account is inactive.")
-
-        # Note: we do not block login on `is_mobile_verified` here so users
-        # who haven't completed OTP verification can still authenticate.
+        # Require users to have verified their mobile/email via OTP before login
+        if not user.is_mobile_verified:
+            raise serializers.ValidationError(
+                "Account not verified. Please verify your email token before logging in."
+            )
         attrs["user"] = user
         return attrs
 

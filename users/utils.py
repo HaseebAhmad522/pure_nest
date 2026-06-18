@@ -31,7 +31,7 @@ def send_verification_email(user, token):
     context = {
         "user": user,
         "token": token,
-        "expiry_minutes": settings.OTP_EXPIRY_MINUTES,
+        # expiry removed: OTPs do not expire
         "site_name": SITE_NAME,
     }
 
@@ -60,12 +60,8 @@ def create_otp_for_user(user):
     )
 
     otp_code = generate_otp()
-    expires_at = timezone.now() + timedelta(minutes=settings.OTP_EXPIRY_MINUTES)
-    otp_record = OTPVerification.objects.create(
-        user=user,
-        otp=otp_code,
-        expires_at=expires_at,
-    )
+    # Do not set an expiry; OTPs will remain valid until verified
+    otp_record = OTPVerification.objects.create(user=user, otp=otp_code)
     send_verification_email(user, otp_code)
     return otp_record
 
@@ -76,7 +72,6 @@ def verify_otp(user, otp_code):
             user=user,
             otp=otp_code,
             is_verified=False,
-            expires_at__gt=timezone.now(),
         )
         .order_by("-created_at")
         .first()
