@@ -15,7 +15,9 @@ from .serializers import (
     SignupSerializer,
     VerifyOTPSerializer,
     UserProfileSerializer,
+    RiderCreateSerializer,
 )
+from .permissions import IsAdminRole
 
 
 def get_token_for_user(user):
@@ -167,6 +169,47 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             {"message": "Profile updated successfully.", "user": serializer.data},
             status=status.HTTP_200_OK,
         )
+
+
+
+class AdminUserViewSet(viewsets.ViewSet):
+    """Admin endpoints to manage users: list customers, list riders, create riders."""
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
+    def list_customers(self, request):
+        customers = CustomUser.objects.filter(role="customer")
+        serializer = UserProfileSerializer(customers, many=True)
+        return Response(serializer.data)
+
+    def list_riders(self, request):
+        riders = CustomUser.objects.filter(role="rider")
+        serializer = UserProfileSerializer(riders, many=True)
+        return Response(serializer.data)
+
+    def create_rider(self, request):
+        serializer = RiderCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response({"message": "Rider created.", "user": CustomUserSerializer(user).data}, status=status.HTTP_201_CREATED)
+
+    def list_by_role(self, request):
+        """GET /admin/users/?role=customer or role=rider or role=customer,rider
+
+        Supports repeated `role` params or comma-separated values.
+        If no `role` provided, returns both customers and riders.
+        """
+        query_roles = request.query_params.getlist("role")
+        roles = []
+        for r in query_roles:
+            roles.extend([x.strip() for x in r.split(",") if x.strip()])
+
+        if not roles:
+            roles = ["customer", "rider"]
+
+        users = CustomUser.objects.filter(role__in=roles)
+        serializer = UserProfileSerializer(users, many=True)
+        return Response(serializer.data)
     
     
     

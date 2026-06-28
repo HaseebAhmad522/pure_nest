@@ -78,7 +78,7 @@ def verify_otp(user, otp_code):
     )
 
     if not otp_record:
-        return False, "Invalid or expired verification token."
+        return False, "Invalid verification token."
 
     otp_record.is_verified = True
     otp_record.verified_at = timezone.now()

@@ -13,6 +13,7 @@ from .views import (
     ResetPasswordViewSet,
     UserProfileViewSet
 )
+from .views import AdminUserViewSet
 
 # router = DefaultRouter()
 # router.register("users", CustomUserViewSet, basename="user")
@@ -31,4 +32,10 @@ urlpatterns = [
     path("users/forgot-password/", ForgotPasswordViewSet.as_view({"post": "create"}), name="users-forgot-password"),
     path("users/reset-password/", ResetPasswordViewSet.as_view({"post": "create"}), name="users-reset-password"),
     path("users/profile/", UserProfileViewSet.as_view({"get": "retrieve", "put": "update"}), name="users-profile"),
+    # Admin endpoints
+    path("admin/customers/", AdminUserViewSet.as_view({"get": "list_customers"}), name="admin-customers"),
+    path("admin/riders/", AdminUserViewSet.as_view({"get": "list_riders", "post": "create_rider"}), name="admin-riders"),
+    path("admin/create-rider/", AdminUserViewSet.as_view({"post": "create_rider"}), name="admin-create-rider"),
+    # Combined admin users endpoint - filter by role(s)
+    path("admin/users/", AdminUserViewSet.as_view({"get": "list_by_role", "post": "create_rider"}), name="admin-users"),
 ]

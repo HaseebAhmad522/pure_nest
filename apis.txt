@@ -1,0 +1,187 @@
+Base URL:
+http://localhost:8000/api/
+
+Authentication:
+- Token authentication for protected endpoints.
+- Header: Authorization: Token <token>
+
+Endpoints (Postman-ready)
+
+1) Signup
+- Method: POST
+- URL: http://localhost:8000/api/users/signup/
+- Payload (JSON):
+  {
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john@example.com",
+    "mobile_number": "+1234567890",
+    "role": "customer",  # optional, default customer          (NOT REQUIRED)
+    "address": "123 Main St",
+    "password": "strongpassword"
+  }
+- Success Response (201):
+  {
+    "message": "Signup successful. Verification token sent to your email.",
+    "user": {
+      "id": 1,
+      "first_name": "John",
+      "last_name": "Doe",
+      "email": "john@example.com",
+      "mobile_number": "+1234567890",
+      "role": "customer",
+      "address": "123 Main St",
+      "is_mobile_verified": false,
+      "is_active": true,
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  }
+
+2) Login
+- Method: POST
+- URL: http://localhost:8000/api/users/login/
+- Payload (JSON):
+  {
+    "mobile_number": "+1234567890",
+    "password": "strongpassword"
+  }
+- Success Response (200):
+  {
+    "message": "Login successful.",
+    "token": "0123456789abcdef0123456789abcdef01234567",
+    "user": { /* same user object as above (UserProfileSerializer fields + id) */ }
+  }
+
+
+3) Verify OTP
+- Method: POST
+- URL: http://localhost:8000/api/users/verify-otp/
+- Payload (JSON):
+  {
+    "mobile_number": "+1234567890",
+    "otp": "123456"
+  }
+- Success Response (200):
+  {
+    "message": "Email & Mobile Number verified successfully.",
+    "user": { /* user object with is_mobile_verified=true */ }
+  }
+
+4) Forgot Password (send reset OTP)
+- Method: POST
+- URL: http://localhost:8000/api/users/forgot-password/
+- Payload (JSON):
+  {
+    "mobile_number": "+1234567890"
+  }
+- Success Response (200):
+  {
+    "message": "Password reset token sent to your email.",
+    "email": "john@example.com"
+  }
+
+5) Reset Password
+- Method: POST
+- URL: http://localhost:8000/api/users/reset-password/
+- Payload (JSON):
+  {
+    "mobile_number": "+1234567890",
+    "otp": "654321",
+    "new_password": "newstrongpassword"
+  }
+- Success Response (200):
+  {
+    "message": "Password reset successful.",
+    "user": { /* user object */ }
+  }
+
+6) User Profile (retrieve)
+- Method: GET
+- URL: http://localhost:8000/api/users/profile/
+- Headers: Authorization: Token <token>
+- Success Response (200):
+  {
+    "id": 1,
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john@example.com",
+    "mobile_number": "+1234567890",
+    "role": "customer",
+    "address": "123 Main St",
+
+    "is_mobile_verified": true,
+    "is_active": true,
+    "created_at": "2026-01-01T00:00:00Z",
+    "updated_at": "2026-01-02T00:00:00Z"
+  }
+
+7) User Profile (update)
+- Method: PUT
+- URL: http://localhost:8000/api/users/profile/
+- Headers: Authorization: Token <token>
+- Payload (JSON) - only allowed fields are updated:
+  {
+    "first_name": "Johnny",
+    "last_name": "D.",
+    "address": "456 Other St"
+  }
+- Success Response (200):
+  {
+    "message": "Profile updated successfully.",
+    "user": { /* updated user object */ }
+  }
+
+Admin endpoints (require admin token + IsAdminRole)
+
+8) List Customers
+- Method: GET
+- URL: http://localhost:8000/api/admin/customers/
+- Headers: Authorization: Token <admin-token>
+- Success Response (200):
+  [ { /* user profile objects (UserProfileSerializer) */ }, ... ]
+
+9) List Riders
+- Method: GET
+- URL: http://localhost:8000/api/admin/riders/
+- Headers: Authorization: Token <admin-token>
+- Success Response (200):
+  [ { /* user profile objects */ }, ... ]
+
+10) Create Rider (admin)
+- Method: POST
+- URL: http://localhost:8000/api/admin/create-rider/
+- Headers: Authorization: Token <admin-token>
+- Payload (JSON):
+  {
+    "first_name": "Rider",
+    "last_name": "One",
+    "email": "rider1@example.com",
+    "mobile_number": "+1987654321",
+    "address": "789 Rider Rd",
+    "latitude": "1.2345678",
+    "longitude": "9.8765432",
+    "password": "riderpassword"
+  }
+- Success Response (201):
+  {
+    "message": "Rider created.",
+    "user": { /* created user object */ }
+  }
+
+11) Admin users (filter by role)
+- Method: GET
+- URL: http://localhost:8000/api/admin/users/?role=customer  OR ?role=rider OR ?role=customer,rider
+- Headers: Authorization: Token <admin-token>
+- Success Response (200):
+  [ { /* user profile objects matching role */ }, ... ]
+
+Common error response (validation / auth)
+- Status: 400 or 401 or 403
+- Body (example 400 validation error):
+  { "mobile_number": ["No user found with this mobile number."] }
+
+Notes for Postman import:
+- Use `http://localhost:8000` as host and add `/api/` prefix for endpoints above.
+- For protected endpoints, add a Header `Authorization` with value `Token <token>`.
+- Timestamps and IDs in sample responses are illustrative — actual values come from the server.

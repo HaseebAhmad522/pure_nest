@@ -70,7 +70,10 @@ Protected request example:
 Authorization: Token <your_token_here>
 ```
 
-If you'd like, I can also run the test suite or start the server in this workspace to verify the endpoints. 
+If you'd like, I can also run the test suite or start the server in this workspace to verify the endpoints.
+
+Common errors
+
 | Error | Cause | Fix |
 |-------|-------|-----|
 | `Email is not verified. Please verify your email token before logging in.` | Login before verifying | Complete Step 2 first |
@@ -115,3 +118,54 @@ curl -X POST http://127.0.0.1:8000/api/users/reset-password/ \
   -H "Content-Type: application/json" \
   -d '{"mobile_number":"+923068760177","otp":"YOUR_TOKEN_FROM_EMAIL","new_password":"NewPassword@123"}'
 ```
+
+## Admin APIs
+
+Admins (users with `role: "admin"`) can manage riders and customers via token-authenticated endpoints.
+
+Authentication: include header `Authorization: Token <admin-token>` obtained from the normal login endpoint.
+
+- `GET /api/admin/customers/` — list all customers
+- `GET /api/admin/riders/` — list all riders
+- `POST /api/admin/riders/` — create a new rider (sends verification OTP to rider email)
+ - `POST /api/admin/riders/` — create a new rider (sends verification OTP to rider email)
+ - `POST /api/admin/create-rider/` — alias endpoint to create a new rider (same as above)
+
+Example: create a rider as admin
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/admin/riders/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Token <ADMIN_TOKEN>" \
+  -d '{"first_name":"Rider","last_name":"One","email":"rider1@example.com","mobile_number":"+923001112233","password":"RiderPass123","address":"City"}'
+```
+
+List customers and riders by role (single endpoint)
+
+```bash
+# list customers
+curl -X GET 'http://127.0.0.1:8000/api/admin/users/?role=customer' \
+  -H "Authorization: Token <ADMIN_TOKEN>"
+
+# list riders
+curl -X GET 'http://127.0.0.1:8000/api/admin/users/?role=rider' \
+  -H "Authorization: Token <ADMIN_TOKEN>"
+
+# list both (comma-separated)
+curl -X GET 'http://127.0.0.1:8000/api/admin/users/?role=customer,rider' \
+  -H "Authorization: Token <ADMIN_TOKEN>"
+
+# list both (repeated params)
+curl -X GET 'http://127.0.0.1:8000/api/admin/users/?role=customer&role=rider' \
+  -H "Authorization: Token <ADMIN_TOKEN>"
+```
+
+Notes:
+- Riders, customers and admins all use the same `POST /api/users/login/` endpoint to authenticate.
+- Riders must complete OTP verification (`POST /api/users/verify-otp/`) before they can log in — the API enforces `is_mobile_verified` on login.
+- When an admin creates a rider, an OTP is sent automatically to the rider's email; the rider must verify to log in.
+
+Security considerations:
+- Currently OTP expiry was removed per request; consider reintroducing expiry (e.g., 10 minutes) for improved security.
+- Admin endpoints are protected by token auth and a role check (`role == 'admin'`). Ensure your admin accounts have `role` set to `admin`.
+

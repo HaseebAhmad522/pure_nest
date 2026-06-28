@@ -233,3 +233,45 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "is_mobile_verified", "created_at", "updated_at"]
+
+
+class RiderCreateSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, min_length=8)
+
+    class Meta:
+        model = CustomUser
+        fields = [
+            "first_name",
+            "last_name",
+            "email",
+            "mobile_number",
+            "role",
+            "address",
+            "latitude",
+            "longitude",
+            "password",
+        ]
+
+    def validate_mobile_number(self, value):
+        if CustomUser.objects.filter(mobile_number=value).exists():
+            raise serializers.ValidationError("A user with this mobile number already exists.")
+        return value
+
+    def validate_email(self, value):
+        if not value:
+            raise serializers.ValidationError("Email address is required for verification.")
+        if CustomUser.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
+
+    def create(self, validated_data):
+        # force role to rider
+        validated_data["role"] = "rider"
+        password = validated_data.pop("password")
+        try:
+            with transaction.atomic():
+                user = CustomUser.objects.create_user(password=password, **validated_data)
+                create_otp_for_user(user)
+                return user
+        except EmailDeliveryError as exc:
+            raise serializers.ValidationError({"email": str(exc)}) from exc
